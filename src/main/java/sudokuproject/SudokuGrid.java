@@ -29,4 +29,16 @@ public class SudokuGrid {
         }
         return true;
     }
+
+    // Methode zum Überprüfen, ob das Sudoku gelöst ist
+    public boolean isSolved() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (board[i][j] == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
