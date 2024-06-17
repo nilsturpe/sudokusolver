@@ -24,7 +24,7 @@ Wir haben uns für den Algorithmus entschieden, aufgrund der einfachen Nachvollz
  
 1. JavaFX sowie Java-Version 22 muss installiert sein.
 2. Alle Java-Dateien müssen kompiliert werden.
-3. Main.java ausführen.
+3. Main.java ausführen. Wählen Sie hierbei bitte "run Java" in VS code, damit JavaFX verwendet werden kann.
 
 Wir empfehlen VS Code.
  
