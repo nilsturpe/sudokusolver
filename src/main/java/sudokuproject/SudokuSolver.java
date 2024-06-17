@@ -1,16 +1,16 @@
 package sudokuproject;
 
+// Klasse, die das Sudoku-Brett mit dem Algorithmus löst 
 public class SudokuSolver {
-    private SudokuGrid grid;
-    private SolverAlgorithm algorithm;
+    private SudokuGrid grid;  
+    private BacktrackingAlgorithm algorithm;
 
-    // Konstruktor: Initialisiere das SudokuGrid und den Algorithmus
+ 
     public SudokuSolver(SudokuGrid grid) {
-        this.grid = grid;
-        this.algorithm = new BacktrackingAlgorithm(); // Verwende den Backtracking-Algorithmus
+        this.grid = grid; 
+        this.algorithm = new BacktrackingAlgorithm();
     }
-
-    // Methode zum Lösen des Sudoku
+ 
     public boolean solve() {
         return algorithm.solve(grid);
     }

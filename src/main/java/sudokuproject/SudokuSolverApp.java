@@ -2,6 +2,7 @@ package sudokuproject;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -22,22 +23,33 @@ import javafx.scene.layout.CornerRadii;
 
 public class SudokuSolverApp extends Application {
 
-    private TextField[][] fields = new TextField[9][9];
-    private SudokuGrid grid;
+    private TextField[][] sudokuFields = new TextField[9][9];
+    // logisches Sudoku-Grid
+    private SudokuGrid sudokuGrid;
+    private NumberParser<Integer> arabicParser;
+    private NumberParser<Integer> romanParser;
+    private Label duplicateMessageLabel;
+
+    public SudokuSolverApp() {
+        this.arabicParser = new ArabicNumberParser();
+        this.romanParser = new RomanNumberParser();
+    }
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Sudoku Solver");
 
-        // Title
         Label titleLabel = new Label("Sudoku Solver");
         titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
 
-        // Subtitle
-        Label subtitleLabel = new Label("You can enter Roman or Arabic numerals");
+        Label subtitleLabel = new Label("You can enter Roman or Arabic numbers.");
         subtitleLabel.setStyle("-fx-font-size: 16px;");
 
-        // Sudoku Grid
+        // Label, um anzuzeigen, falls Duplikate vorhanden sind
+        duplicateMessageLabel = new Label();
+        duplicateMessageLabel.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
+
+        // visuelles Sudoku Grid
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10));
         gridPane.setHgap(0);
@@ -57,13 +69,42 @@ public class SudokuSolverApp extends Application {
                     }
                 });
 
-                // Set border styles
-                BorderWidths borderWidths = new BorderWidths(
-                    (i % 3 == 0) ? 2 : 1,
-                    (j % 3 == 2) ? 2 : 1,
-                    (i % 3 == 2) ? 2 : 1,
-                    (j % 3 == 0) ? 2 : 1
-                );
+                // Ränder Kästen
+                int top;
+                int right;
+                int bottom;
+                int left;
+        
+                // Bestimmte Ränder müssen dicker gemacht werden, damit die 3x3 Kästchenform deutlich wird        
+                // Jedes Dritte Kästchen, gezählt von Anfang an, und von Oben ist ein 3x3 Kästchen-Rand
+                if (i % 3 == 0) {
+                    top = 2; 
+                } else {
+                    top = 1; 
+                }
+        
+                // Jedes dritte Kästchen, ab dem dritten Kästchen, ist der rechte Rand eines 3x3 Kästchen
+                if (j % 3 == 2) {
+                    right = 2; 
+                } else {
+                    right = 1; 
+                }
+        
+                // Erstellen der unteren Ränder
+                if (i % 3 == 2) {
+                    bottom = 2;
+                } else {
+                    bottom = 1; 
+                }
+        
+                // Erstellen der linken Ränder
+                if (j % 3 == 0) {
+                    left = 2; 
+                } else {
+                    left = 1; 
+                }
+        
+                BorderWidths borderWidths = new BorderWidths(top, right, bottom, left);
 
                 BorderStroke borderStroke = new BorderStroke(
                     Color.BLACK, 
@@ -72,58 +113,60 @@ public class SudokuSolverApp extends Application {
                     borderWidths
                 );
 
+                // Kästchen wird erstellt
                 field.setBorder(new Border(borderStroke));
 
-                fields[i][j] = field;
+                sudokuFields[i][j] = field;
                 gridPane.add(field, j, i);
             }
         }
 
         // Solve Button
         Button solveButton = new Button("Solve");
+        solveButton.setPrefWidth(100);
         solveButton.setOnAction(e -> solveSudoku());
 
         // Clear Button
         Button clearButton = new Button("Clear");
+        clearButton.setPrefWidth(100);
         clearButton.setOnAction(e -> clearGrid());
 
         HBox buttonBox = new HBox(10, solveButton, clearButton);
-        buttonBox.setStyle("-fx-alignment: center;");
+        buttonBox.setAlignment(Pos.CENTER);
 
-        VBox vbox = new VBox(10, titleLabel, subtitleLabel, gridPane, buttonBox);
-        vbox.setStyle("-fx-padding: 20px; -fx-alignment: center;");
+        VBox vbox = new VBox(10, titleLabel, subtitleLabel, gridPane, duplicateMessageLabel, buttonBox);
+        vbox.setStyle("-fx-padding: 20px;");
+        vbox.setAlignment(Pos.CENTER);
 
         Scene scene = new Scene(vbox);
         primaryStage.setScene(scene);
+
+        // Fullscreen deaktivieren
+        primaryStage.setFullScreen(false);
+        primaryStage.setResizable(false);
+        
         primaryStage.show();
     }
 
+    // Überprüfung, ob eingegebene Zahlen gültig sind
+    // Falls nicht, werden diese nicht angezeigt und nicht übernommen
     private boolean isValidInput(String input) {
         if (input.length() > 2) {
             return false;
         }
-        switch (input.toUpperCase()) {
-            case "I":
-            case "II":
-            case "III":
-            case "IV":
-            case "V":
-            case "VI":
-            case "VII":
-            case "VIII":
-            case "IX":
-                return true;
-            default:
-                return input.matches("[1-9]");
-        }
+        Integer arabicValue = arabicParser.parse(input);
+        Integer romanValue = romanParser.parse(input);
+        return (arabicValue != 0 && arabicValue <= 9) || (romanValue != 0 && romanValue <= 9);
     }
 
-    private void solveSudoku() {
+    // Überprüfung, ob der Benutzer Zahlen falsch eingetragen hat
+    private boolean checkForDuplicates() {
+        // Logisches Sudoku-Brett wird erstellt 
         int[][] board = new int[9][9];
 
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                String text = fields[i][j].getText();
+                String text = sudokuFields[i][j].getText();
                 if (!text.isEmpty()) {
                     int value = parseInput(text);
                     if (value >= 1 && value <= 9) {
@@ -133,42 +176,102 @@ public class SudokuSolverApp extends Application {
             }
         }
 
-        grid = new SudokuGrid(board);
-        SudokuSolver solver = new SudokuSolver(grid);
+        // Es wird überprüft, dass keine Duplikate in den Zeilen und den Spalten sind
+        for (int i = 0; i < 9; i++) {
+            boolean[] rowCheck = new boolean[10];
+            boolean[] colCheck = new boolean[10];
+            for (int j = 0; j < 9; j++) {
+                if (board[i][j] != 0) {
+                    if (rowCheck[board[i][j]]) {
+                        duplicateMessageLabel.setText("Duplicate value found in row " + (i + 1));
+                        return false;
+                    }
+                    rowCheck[board[i][j]] = true;
+                }
+                if (board[j][i] != 0) {
+                    if (colCheck[board[j][i]]) {
+                        duplicateMessageLabel.setText("Duplicate value found in column " + (i + 1));
+                        return false;
+                    }
+                    colCheck[board[j][i]] = true;
+                }
+            }
+        }
+
+        // Es wird überprüft, dass keine Duplikate in den 3x3 Kästen sind
+        for (int row = 0; row < 9; row += 3) {
+            for (int col = 0; col < 9; col += 3) {
+                boolean[] boxCheck = new boolean[10];
+                for (int r = row; r < row + 3; r++) {
+                    for (int c = col; c < col + 3; c++) {
+                        if (board[r][c] != 0) {
+                            if (boxCheck[board[r][c]]) {
+                                duplicateMessageLabel.setText("Duplicate value found in row " + (row + 1) + ", column " + (col + 1));
+                                return false;
+                            }
+                            boxCheck[board[r][c]] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        duplicateMessageLabel.setText("");  
+        return true;
+    }
+
+    // Es wird erst versucht das Sudoku zu lösen, wenn keine Duplikate eingegeben worden sind
+    private void solveSudoku() {
+        if (!checkForDuplicates()) {
+            return;
+        }
+
+        // Logisches Sudoku-Brett wird erstellt 
+        int[][] board = new int[9][9];
+
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                String text = sudokuFields[i][j].getText();
+                if (!text.isEmpty()) {
+                    int value = parseInput(text);
+                    if (value >= 1 && value <= 9) {
+                        board[i][j] = value;
+                    }
+                }
+            }
+        }
+
+        sudokuGrid = new SudokuGrid(board);
+        SudokuSolver solver = new SudokuSolver(sudokuGrid);
 
         if (solver.solve()) {
-            displaySolution(grid);
+            displaySolution(sudokuGrid);
         } else {
-            System.out.println("No solution found.");
+            duplicateMessageLabel.setText("No solution found.");
         }
     }
 
+    // Methode um Zahlen einheitlich umzuwandeln 
     private int parseInput(String text) {
-        switch (text.toUpperCase()) {
-            case "I": return 1;
-            case "II": return 2;
-            case "III": return 3;
-            case "IV": return 4;
-            case "V": return 5;
-            case "VI": return 6;
-            case "VII": return 7;
-            case "VIII": return 8;
-            case "IX": return 9;
-            default:
-                try {
-                    return Integer.parseInt(text);
-                } catch (NumberFormatException e) {
-                    return 0;
-                }
+        Integer arabicValue = arabicParser.parse(text);
+        Integer romanValue = romanParser.parse(text);
+
+        if (arabicValue != 0) {
+            return arabicValue;
+        } else if (romanValue != 0) {
+            return romanValue;
+        } else {
+            return 0;
         }
     }
 
+    // Ausgabe der Nachricht, falls ein Duplikat eingegeben wurde
     private void displaySolution(SudokuGrid grid) {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                if (fields[i][j].getText().isEmpty()) {
-                    fields[i][j].setText(String.valueOf(grid.getValue(i, j)));
-                    fields[i][j].setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+                if (sudokuFields[i][j].getText().isEmpty()) {
+                    sudokuFields[i][j].setText(String.valueOf(grid.getValue(i, j)));
+                    sudokuFields[i][j].setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
                 }
             }
         }
@@ -177,10 +280,11 @@ public class SudokuSolverApp extends Application {
     private void clearGrid() {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                fields[i][j].setText("");
-                fields[i][j].setStyle("-fx-text-fill: black;");
+                sudokuFields[i][j].setText("");
+                sudokuFields[i][j].setStyle("-fx-text-fill: black;");
             }
         }
+        duplicateMessageLabel.setText("");  
     }
 
     public static void main(String[] args) {

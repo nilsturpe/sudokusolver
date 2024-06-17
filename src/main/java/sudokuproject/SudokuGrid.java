@@ -3,24 +3,24 @@ package sudokuproject;
 public class SudokuGrid {
     private int[][] board;
 
-    // Konstruktor: Initialisiere das Board
+    // Konstruktor
     public SudokuGrid(int[][] board) {
         this.board = board;
     }
 
-    // Methode zum Abrufen eines Wertes auf dem Board
+    // Getter
     public int getValue(int row, int col) {
         return board[row][col];
     }
 
-    // Methode zum Setzen eines Wertes auf dem Board
+    // Setter
     public void setValue(int row, int col, int value) {
         board[row][col] = value;
     }
 
-    // Methode zur Überprüfung, ob eine Zahl in einer bestimmten Position sicher ist
-    public boolean isSafe(int row, int col, int num) {
-        // Überprüfe die Zeile und die Spalte
+    // Prüfung, ob die Zahl an dieser Stelle einsetzbar ist
+    // Es wird zuerst geschaut, ob sie bereits in der Zeile, dann der Spalte und dann im 3x3 Kasten vorhanden ist
+    public boolean isPossible(int row, int col, int num) {
         for (int x = 0; x < 9; x++) {
             if (board[row][x] == num || board[x][col] == num ||
                 board[row - row % 3 + x / 3][col - col % 3 + x % 3] == num) {
@@ -30,7 +30,8 @@ public class SudokuGrid {
         return true;
     }
 
-    // Methode zum Überprüfen, ob das Sudoku gelöst ist
+    // Prüfung, ob das Sudoku gelöst ist
+    // Stellt sicher, dass keine Zeile leer ist
     public boolean isSolved() {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
